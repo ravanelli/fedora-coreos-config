@@ -1,6 +1,6 @@
 # This unit will run early in boot and detect if:
-# - user copied in firstboot networking config files
-#   into `/etc` (by using `coreos-installer install
+# - user embedded firstboot networking config files
+#   into the initramfs `/etc` (by using `coreos-installer install
 #   --copy-network`).
 #
 # Since this unit is modifying network configuration there are some
@@ -30,22 +30,13 @@ ConditionPathExists=/etc/coreos-firstboot-network
 DefaultDependencies=false
 # We're pulled in by ignition-complete.target; as good practice, add a matching
 # Before to be explicit about it gating on this unit passing.
-Before=network-pre.target ignition-diskful.target
 Before=ignition-complete.target
 Before=nm-initrd.service
-Wants=network-pre.target
 After=dracut-cmdline.service
-# And since the boot device may be on multipath; optionally wait for it to
-# appear via the dynamic target.
-After=coreos-multipath-wait.target
 # Need to run after coreos-enable-network since it may re-run the NM cmdline
 # hook which will generate NM configs from the network kargs, but we want to
 # have precedence.
 After=coreos-enable-network.service
-# We've seen races with ignition-kargs.service, which accesses /boot rw.
-# Let's introduce some ordering here. Need to use `Before` because otherwise
-# we get a systemd ordering cycle. https://github.com/coreos/fedora-coreos-tracker/issues/883
-Before=ignition-kargs.service
 
 [Service]
 Type=oneshot
