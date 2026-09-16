@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+MOTD_FILE="/etc/motd.d/coreos-warn-misplaced-network.motd"
+
+mkdir -p /etc/motd.d
+cat > "${MOTD_FILE}" <<'EOF'
+##########################################################################
+WARNING: MISPLACED FIRSTBOOT NETWORK CONFIGURATION DETECTED
+
+During first boot, network configuration was found in
+/boot/coreos-firstboot-network. This was placed there by an older
+version of coreos-installer. The configuration was automatically
+rescued and applied, but this compatibility workaround will be
+removed in a future release.
+
+ACTION REQUIRED: Re-install using an updated coreos-installer that
+embeds network config in the initramfs instead of /boot.
+
+To dismiss this warning, delete /etc/motd.d/coreos-warn-misplaced-network.motd
+##########################################################################
+EOF

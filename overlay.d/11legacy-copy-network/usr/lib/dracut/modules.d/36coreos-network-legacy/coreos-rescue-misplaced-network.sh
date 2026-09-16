@@ -1,0 +1,48 @@
+#!/bin/bash
+set -euo pipefail
+
+# Rescue firstboot network config that an older coreos-installer placed
+# in /boot/coreos-firstboot-network. Copy it directly to the
+# NetworkManager connections directory so it is applied for this boot.
+# This service is mutually exclusive with coreos-copy-firstboot-network:
+# either the config is in the initramfs /etc (new installer) or in
+# /boot (old installer), but not both.
+
+bootmnt=/mnt/boot_partition
+bootdev=/dev/disk/by-label/boot
+boot_firstboot_network_dir="${bootmnt}/coreos-firstboot-network"
+initramfs_network_dir="/run/NetworkManager/system-connections/"
+
+if [ ! -b "${bootdev}" ]; then
+    echo "info: boot device ${bootdev} not found; skipping legacy network rescue"
+    exit 0
+fi
+
+mkdir -p "${bootmnt}"
+if ! mount -o ro "${bootdev}" "${bootmnt}"; then
+    echo "warning: failed to mount ${bootdev}; skipping legacy network rescue"
+    exit 0
+fi
+
+warn() {
+    echo "$@"
+    echo "$@" > /dev/kmsg || true
+}
+
+if [ -n "$(ls -A "${boot_firstboot_network_dir}" 2>/dev/null)" ]; then
+    warn "warning: found legacy firstboot network config in ${boot_firstboot_network_dir}"
+    warn "warning: an older coreos-installer placed network config in /boot instead of the initramfs"
+    warn "warning: rescuing config — copying to ${initramfs_network_dir}"
+    warn "warning: re-install using an updated coreos-installer to avoid this in the future"
+    # Clear out any files that may have already been generated from
+    # kargs by nm-initrd-generator
+    rm -f ${initramfs_network_dir}/*
+    mkdir -p ${initramfs_network_dir}
+    cp -v "${boot_firstboot_network_dir}"/* ${initramfs_network_dir}/
+    # Signal to the real-system coreos-warn-misplaced-network.service
+    # that legacy config was found. /run survives pivot_root.
+    mkdir -p /run/coreos
+    touch /run/coreos/legacy-network-rescued
+else
+    echo "info: no legacy network config in ${boot_firstboot_network_dir}; skipping"
+fi

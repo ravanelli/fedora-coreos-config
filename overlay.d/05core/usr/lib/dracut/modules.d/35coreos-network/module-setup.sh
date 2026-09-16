@@ -23,11 +23,6 @@ install() {
     install_and_enable_unit "coreos-enable-network.service" \
         "ignition-complete.target"
 
-    inst_simple "$moddir/coreos-rescue-misplaced-network.sh" \
-        "/usr/sbin/coreos-rescue-misplaced-network"
-    install_and_enable_unit "coreos-rescue-misplaced-network.service" \
-        "ignition-complete.target"
-
     inst_simple "$moddir/coreos-copy-firstboot-network.sh" \
         "/usr/sbin/coreos-copy-firstboot-network"
     install_and_enable_unit "coreos-copy-firstboot-network.service" \
@@ -37,8 +32,4 @@ install() {
     # Afterburn.
     inst_simple "$moddir/50-afterburn-network-kargs-default.conf" \
         "/usr/lib/systemd/system/afterburn-network-kargs.service.d/50-afterburn-network-kargs-default.conf"
-
-    # Warn on emergency shell if firstboot network config may have been
-    # placed in /boot by an older coreos-installer.
-    inst_hook emergency 50 "${moddir}/coreos-warn-misplaced-network.sh"
 }
