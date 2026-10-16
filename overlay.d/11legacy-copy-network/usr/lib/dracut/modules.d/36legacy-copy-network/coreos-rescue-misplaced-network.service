@@ -17,6 +17,13 @@ After=coreos-enable-network.service
 # On iSCSI, coreos-diskful-generator neuters this unit to avoid a
 # deadlock (the boot device is behind the network there).
 After=dev-disk-by\x2dlabel-boot.device
+# coreos-gpt-setup.service orders After=coreos-copy-firstboot-network.service
+# but has no ordering with this rescue service, causing a race.
+# On firstboot it runs sgdisk to regenerate the GPT disk GUID, which
+# triggers a partition table re-read and transiently removes the
+# by-label/boot symlink. Without this ordering, ConditionPathExists
+# can not be evaluate while the symlink is gone and skip the service.
+After=coreos-gpt-setup.service
 # The boot device may be on multipath; optionally wait for it to
 # appear via the dynamic target.
 After=coreos-multipath-wait.target
